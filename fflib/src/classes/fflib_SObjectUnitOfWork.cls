@@ -54,6 +54,29 @@
 public virtual class fflib_SObjectUnitOfWork
     implements fflib_ISObjectUnitOfWork
 {
+
+    public static final WorkType WORKTYPE_CUSTOM = WorkType.CUSTOM;
+    public static final WorkType WORKTYPE_DML_DELETE = WorkType.DML_DELETE;
+    public static final WorkType WORKTYPE_DML_INSERT = WorkType.DML_INSERT;
+    public static final WorkType WORKTYPE_DML_UPDATE = WorkType.DML_UPDATE;
+    public static final WorkType WORKTYPE_EMAIL = WorkType.EMAIL;
+    public static final WorkType WORKTYPE_EVENTS_AFTER = WorkType.EVENTS_AFTER;
+    public static final WorkType WORKTYPE_EVENTS_BEFORE = WorkType.EVENTS_BEFORE;
+
+    public static final List<Object> ORDER_OF_WORK = new List<Object>
+    {
+            WORKTYPE_EVENTS_BEFORE,
+            WORKTYPE_DML_INSERT,
+            WORKTYPE_DML_UPDATE,
+            WORKTYPE_DML_DELETE,
+            WORKTYPE_CUSTOM,
+            WORKTYPE_EMAIL,
+            WORKTYPE_EVENTS_AFTER
+    };
+
+    protected fflib_IUnitOfWork work = new fflib_UnitOfWork().setOrderOfWork(ORDER_OF_WORK);
+
+
     protected List<Schema.SObjectType> m_sObjectTypes = new List<Schema.SObjectType>();
 
     protected Map<String, List<SObject>> m_newListByType = new Map<String, List<SObject>>();
@@ -75,6 +98,7 @@ public virtual class fflib_SObjectUnitOfWork
 
     protected IDML m_dml;
 
+
     /**
      * Interface describes work to be performed during the commitWork method
      **/
@@ -93,19 +117,25 @@ public virtual class fflib_SObjectUnitOfWork
 
     public class SimpleDML implements IDML
     {
-        public void dmlInsert(List<SObject> objList){
+        public void dmlInsert(List<SObject> objList)
+        {
             insert objList;
         }
-        public void dmlUpdate(List<SObject> objList){
+        public void dmlUpdate(List<SObject> objList)
+        {
             update objList;
         }
-        public void dmlDelete(List<SObject> objList){
+        public void dmlDelete(List<SObject> objList)
+        {
             delete objList;
         }
-        public void eventPublish(List<SObject> objList){
+        public void eventPublish(List<SObject> objList)
+        {
             EventBus.publish(objList);
         }
     }
+
+
     /**
      * Constructs a new UnitOfWork to support work against the given object list
      *
@@ -721,5 +751,113 @@ public virtual class fflib_SObjectUnitOfWork
         {
             if(emails.size() > 0) Messaging.sendEmail(emails);
         }
+    }
+
+    private abstract class DmlWork implements fflib_IDoWork
+    {
+        protected Map<String, Object> records = new Map<String, Object>();
+        protected IDML dml;
+
+        public DmlWork(List<SObjectType> sObjectTypes, IDML dml)
+        {
+            registerSObjectTypes(sObjectTypes);
+            this.dml = dml;
+        }
+
+        protected Boolean hasRecordType(String sObjectType)
+        {
+            return this.records.containsKey(sObjectType);
+        }
+
+        private void registerSObjectTypes(List<SObjectType> sObjectTypes)
+        {
+            for (SObjectType sObjectType : sObjectTypes)
+            {
+                this.records.put(sObjectType.getDescribe().getName(), getMapType());
+            }
+        }
+
+        abstract Object getMapType();
+        abstract void add(SObject record);
+    }
+
+    private class NewRecordsDmlWork extends DmlWork
+    {
+        private Map<String, Relationships> relationships;
+
+        public NewRecordsDmlWork(List<SObjectType> sObjectTypes, IDML dml, Map<String, Relationships> relationships)
+        {
+            super(sObjectTypes, dml);
+            this.relationships = relationships;
+        }
+
+        public void doWork()
+        {
+        }
+
+        protected override Object getMapType()
+        {
+            return (Object) new List<SObject>();
+        }
+
+        public override void add(SObject record)
+        {
+            ((List<SObject>) this.records.get(record.getSObjectType().getDescribe().getName()))
+                    .add(record);
+        }
+    }
+
+  /*  private abstract class ExistingRecordsDmlWork extends DmlWork
+    {
+        public override void add(SObject record)
+        {
+            String sObjectType = record.getSObjectType().getDescribe().getName();
+            if (!hasRecordType(sObjectType))
+            {
+                this.records.put(sObjectType, (Object) new Map<Id, SObject>());
+            }
+            ((Map<Id, SObject>) this.records.get(sObjectType)).put(record.Id, record);
+        }
+
+        public SObject get(Id recordId)
+        {
+            String sObjectType = recordId.getSobjectType().getDescribe().getName();
+            if (this.records.containsKey(sObjectType))
+            {
+                Map<Id, SObject> recordsMap = (Map<Id, SObject>) this.records.get(sObjectType);
+                if (recordsMap..containsKey(recordId))
+                {
+                    return recordsMap.get(recordId);
+                }
+            }
+            return null;
+        }
+    }
+*/
+  /*  protected class DirtyDmlWork extends ExistingDmlWork
+    {
+        protected void doWork()
+        {
+        }
+
+    }
+
+    protected class DeleteDmlWork extends ExistingDmlWork
+    {
+        protected void doWork()
+        {
+        }
+
+    }*/
+
+    public enum WorkType
+    {
+        EVENTS_BEFORE,
+        DML_INSERT,
+        DML_UPDATE,
+        DML_DELETE,
+        CUSTOM,
+        EMAIL,
+        EVENTS_AFTER
     }
 }
