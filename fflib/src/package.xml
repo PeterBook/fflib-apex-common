@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
         <members>fflib_Application</members>
         <members>fflib_ApplicationTest</members>
+        <members>fflib_DependencyInjector</members>
+        <members>fflib_IDependencyInjector</members>
         <members>fflib_ISObjectDomain</members>
         <members>fflib_ISObjectSelector</members>
         <members>fflib_ISObjectUnitOfWork</members>

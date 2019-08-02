@@ -117,11 +117,14 @@ public class fflib_Application
 		}
 	}
 
+
 	/**
 	 * Simple Service Factory implementaiton
 	 **/
 	public class ServiceFactory
 	{
+		private fflib_IDependencyInjector dependencyInjector;
+
 		private Map<Type, Type> m_serviceInterfaceTypeByServiceImplType;
 
 		private Map<Type, Object> m_serviceInterfaceTypeByMockService;
@@ -136,8 +139,12 @@ public class fflib_Application
 		 **/
 		public ServiceFactory(Map<Type, Type> serviceInterfaceTypeByServiceImplType)
 		{
-			m_serviceInterfaceTypeByServiceImplType = serviceInterfaceTypeByServiceImplType;
-			m_serviceInterfaceTypeByMockService = new Map<Type, Object>();
+			this.dependencyInjector = new fflib_DependencyInjector(serviceInterfaceTypeByServiceImplType);
+		}
+
+		public ServiceFactory(fflib_IDependencyInjector dependencyInjector)
+		{
+			this.dependencyInjector = dependencyInjector;
 		}
 
 		/**
@@ -150,21 +157,13 @@ public class fflib_Application
 		 **/
 		public Object newInstance(Type serviceInterfaceType)
 		{
-			// Mock implementation?
-			if(m_serviceInterfaceTypeByMockService.containsKey(serviceInterfaceType))
-				return m_serviceInterfaceTypeByMockService.get(serviceInterfaceType);
-
-			// Create an instance of the type impleneting the given interface
-			Type serviceImpl = m_serviceInterfaceTypeByServiceImplType.get(serviceInterfaceType);
-			if(serviceImpl==null)
-				throw new DeveloperException('No implementation registered for service interface ' + serviceInterfaceType.getName());	
-			return serviceImpl.newInstance();
+			return this.dependencyInjector.newInstance(serviceInterfaceType);
 		}
 
 		@TestVisible
 		private void setMock(Type serviceInterfaceType, Object serviceImpl)
 		{
-			m_serviceInterfaceTypeByMockService.put(serviceInterfaceType, serviceImpl);
+			this.dependencyInjector.setMock(serviceInterfaceType, serviceImpl);
 		}
 	}
 

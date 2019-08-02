@@ -238,7 +238,7 @@ private class fflib_ApplicationTest
 		try {
 			Service.newInstance(IContactService.class);
 			System.assert(false, 'Expected exception');
-		} catch (fflib_Application.DeveloperException e) {
+		} catch (fflib_DependencyInjector.DependencyInjectorException e) {
 			System.assertEquals('No implementation registered for service interface ' + IContactService.class.getName(), e.getMessage());
 		}
 
