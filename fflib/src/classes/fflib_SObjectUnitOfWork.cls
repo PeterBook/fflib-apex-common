@@ -91,25 +91,46 @@ public virtual class fflib_SObjectUnitOfWork
         void eventPublish(List<SObject> objList);
     }
 
-    public class SimpleDML implements IDML
+    public virtual class SimpleDML implements IDML
     {
-        public void dmlInsert(List<SObject> objList)
+        public virtual void dmlInsert(List<SObject> objList)
         {
             insert objList;
         }
-        public void dmlUpdate(List<SObject> objList)
+        public virtual void dmlUpdate(List<SObject> objList)
         {
             update objList;
         }
-        public void dmlDelete(List<SObject> objList)
+        public virtual void dmlDelete(List<SObject> objList)
         {
             delete objList;
         }
-        public void eventPublish(List<SObject> objList)
+        public virtual void eventPublish(List<SObject> objList)
         {
             EventBus.publish(objList);
         }
     }
+
+	public virtual class StripInaccessibleDML extends SimpleDML
+	{
+		public virtual override void dmlInsert(List<SObject> objList)
+		{
+			SObjectAccessDecision securityDecision = Security.stripInaccessible(
+				AccessType.CREATABLE,
+				objList
+			);
+			insert securityDecision.getRecords();
+		}
+		public virtual override void dmlUpdate(List<SObject> objList)
+		{
+			SObjectAccessDecision securityDecision = Security.stripInaccessible(
+					AccessType.UPDATABLE,
+					objList
+			);
+			update securityDecision.getRecords();
+		}
+	}
+
     /**
      * Constructs a new UnitOfWork to support work against the given object list
      *
