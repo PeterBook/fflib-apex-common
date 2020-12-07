@@ -18,4 +18,17 @@ The objects contained in a domain can be of these data-types;
 - Data Transfer Objects (DTO's)  
 
 
-### Emitter and listeners
+## Primitive domains
+These are domains that only contain primitive variables for the data types;
+
+- Date
+- DateTime
+- Decimal
+- Double
+- Id
+- Integer
+- Long
+- Object
+- SObject
+- String
+
